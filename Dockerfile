@@ -50,8 +50,8 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Create non-root user for security
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001
+RUN groupadd --gid 1001 nodejs && \
+    useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nodejs
 
 # Copy only what's needed
 COPY --from=builder /app/package*.json ./
