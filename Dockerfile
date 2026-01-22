@@ -20,7 +20,7 @@ WORKDIR /app
 RUN groupadd --gid 1001 nodejs && \
     useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nodejs
 
-# Copy built app
+# Copy built app from the build stage
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
@@ -28,11 +28,14 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/docker-entrypoint.sh ./
 
 # Setup permissions
-RUN mkdir -p uploads && chmod +x docker-entrypoint.sh && chown -R nodejs:nodejs /app
+RUN mkdir -p uploads \
+    && chmod +x docker-entrypoint.sh \
+    && chown -R nodejs:nodejs /app
 
-# Switch user
+# Switch to non-root user
 USER nodejs
 
+# Environment
 ENV NODE_ENV=production
 ENV MAIN_APP_PORT=4000
 EXPOSE 4000
@@ -41,5 +44,5 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.MAIN_APP_PORT || 4000) + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start app
+# Start application
 CMD ["./docker-entrypoint.sh"]
