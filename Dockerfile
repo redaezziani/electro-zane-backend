@@ -23,13 +23,15 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install --unsafe-perm
 
-# Copy source
+# Copy source code
 COPY . .
 
+# Generate Prisma client
 RUN npx prisma generate 
 
-# Build project
-RUN npm run build
+# Run migrations & seed database at build-time
+RUN npx prisma migrate deploy
+RUN npm run build && npm run seed-js   # <-- replace with JS seed if you have it compiled
 
 # -------------------------------
 # Stage 2: Production
@@ -49,21 +51,21 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Create non-root user for security
+# Create non-root user
 RUN groupadd --gid 1001 nodejs && \
     useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nodejs
 
-# Copy only what's needed
+# Copy built app
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/docker-entrypoint.sh ./
 
-# Create uploads directory
+# Setup permissions
 RUN mkdir -p uploads && chmod +x docker-entrypoint.sh && chown -R nodejs:nodejs /app
 
-# Switch to non-root user
+# Switch user
 USER nodejs
 
 ENV NODE_ENV=production
@@ -74,4 +76,5 @@ EXPOSE 4000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:' + (process.env.MAIN_APP_PORT || 4000) + '/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
+# Start app
 CMD ["./docker-entrypoint.sh"]
