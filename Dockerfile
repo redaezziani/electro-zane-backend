@@ -1,39 +1,4 @@
 # -------------------------------
-# Stage 1: Build
-# -------------------------------
-FROM node:22-slim AS builder
-
-# Build tools + canvas dependencies
-RUN apt-get update && apt-get install -y \
-    python3 \
-    make \
-    g++ \
-    build-essential \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
-    libgif-dev \
-    librsvg2-dev \
-    git \
-    && rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-# Install dependencies
-COPY package*.json ./
-RUN npm install --unsafe-perm
-
-# Copy source code
-COPY . .
-
-# Generate Prisma client
-RUN npx prisma generate 
-
-# Run migrations & seed database at build-time
-RUN npx prisma migrate deploy
-RUN npm run build && npm run seed-js   # <-- replace with JS seed if you have it compiled
-
-# -------------------------------
 # Stage 2: Production
 # -------------------------------
 FROM node:22-slim
