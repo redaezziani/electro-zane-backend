@@ -13,6 +13,7 @@ README.md
 .prettierrc
 test
 *.md
+!docker-entrypoint.sh
 .vscode
 .idea
 uploads
