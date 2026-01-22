@@ -1,4 +1,38 @@
 # -------------------------------
+# Stage 1: Build
+# -------------------------------
+FROM node:22-slim AS builder
+
+# Build tools + canvas dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    build-essential \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libgif-dev \
+    librsvg2-dev \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm install --unsafe-perm
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client
+RUN npx prisma generate
+
+# Build the app (do NOT run migrations/seeds here)
+RUN npm run build
+
+# -------------------------------
 # Stage 2: Production
 # -------------------------------
 FROM node:22-slim
@@ -20,7 +54,7 @@ WORKDIR /app
 RUN groupadd --gid 1001 nodejs && \
     useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nodejs
 
-# Copy built app from the build stage
+# Copy built app from builder stage
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
