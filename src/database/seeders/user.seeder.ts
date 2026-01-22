@@ -12,41 +12,11 @@ export async function seedUsers() {
   // Define users to seed
   const usersToSeed = [
     {
-      email: 'admin@example.com',
+      email: 'soufiane@electrozane.com',
       password: 'Admin123!',
-      name: 'System Administrator',
+      name: 'Soufiane',
       role: UserRole.ADMIN,
       isEmailVerified: true,
-    },
-    {
-      email: 'moderator@example.com',
-      password: 'Moderator123!',
-      name: 'Content Moderator',
-      role: UserRole.MODERATOR,
-      isEmailVerified: true,
-    },
-    {
-      email: 'john.doe@example.com',
-      password: 'User123!',
-      name: 'John Doe',
-      role: UserRole.USER,
-      isEmailVerified: true,
-    },
-    {
-      email: 'jane.smith@example.com',
-      password: 'User123!',
-      name: 'Jane Smith',
-      role: UserRole.USER,
-      isEmailVerified: true,
-    },
-    {
-      email: 'unverified@example.com',
-      password: 'User123!',
-      name: 'Unverified User',
-      role: UserRole.USER,
-      isEmailVerified: false,
-      emailVerificationToken: 'sample-verification-token-123',
-      emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
     },
   ];
 
@@ -73,8 +43,6 @@ export async function seedUsers() {
           name: userData.name,
           role: userData.role,
           isEmailVerified: userData.isEmailVerified,
-          emailVerificationToken: userData.emailVerificationToken || null,
-          emailVerificationExpires: userData.emailVerificationExpires || null,
         },
       });
 
@@ -88,17 +56,35 @@ export async function seedUsers() {
 }
 
 export async function clearUsers() {
-  console.log('🧹 Clearing users...');
-  
+  console.log('🧹 Clearing users and related data...');
+
   try {
-    // Delete all refresh tokens first (due to foreign key constraint)
+    // Delete all data in reverse dependency order
     await prisma.refreshToken.deleteMany();
     console.log('🗑️ Cleared all refresh tokens');
+
+    await prisma.userDevice.deleteMany();
+    console.log('🗑️ Cleared all user devices');
+
+    await prisma.productReview.deleteMany();
+    console.log('🗑️ Cleared all product reviews');
+
+    await prisma.cartItem.deleteMany();
+    console.log('🗑️ Cleared all cart items');
+
+    await prisma.payment.deleteMany();
+    console.log('🗑️ Cleared all payments');
+
+    await prisma.orderItem.deleteMany();
+    console.log('🗑️ Cleared all order items');
+
+    await prisma.order.deleteMany();
+    console.log('🗑️ Cleared all orders');
 
     // Delete all users
     await prisma.user.deleteMany();
     console.log('🗑️ Cleared all users');
-    
+
     console.log('✨ User clearing completed!');
   } catch (error) {
     console.error('❌ Failed to clear users:', error);
