@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider      = "postgresql"
+  url           = env("DATABASE_URL")
+  binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
 enum UserRole {
@@ -49,13 +50,13 @@ model User {
   deletedAt                DateTime?
 
   // Relations
-  refreshTokens    RefreshToken[]
-  createdOrders    Order[]          @relation("OrderCreator") // Orders created by this admin user
-  confirmedOrders  Order[]          @relation("OrderConfirmer") // Orders confirmed by this admin user
-  reviews          ProductReview[]
-  cartItems        CartItem[]
-  payments         Payment[]
-  devices          UserDevice[]
+  refreshTokens   RefreshToken[]
+  createdOrders   Order[]         @relation("OrderCreator") // Orders created by this admin user
+  confirmedOrders Order[]         @relation("OrderConfirmer") // Orders confirmed by this admin user
+  reviews         ProductReview[]
+  cartItems       CartItem[]
+  payments        Payment[]
+  devices         UserDevice[]
 
   @@index([email])
   @@index([isActive])
@@ -256,23 +257,23 @@ model Order {
   invoiceFileId String? @default("") @db.VarChar(200)
 
   // Customer Information
-  customerName  String  @db.VarChar(100)
-  customerEmail String? @db.VarChar(255)
-  customerPhone String  @db.VarChar(20)
+  customerName    String  @db.VarChar(100)
+  customerEmail   String? @db.VarChar(255)
+  customerPhone   String  @db.VarChar(20)
   customerAddress Json? // Full address object
 
   // Delivery Information (optional for delivery orders)
-  deliveryLat   Float?
-  deliveryLng   Float?
-  deliveryPlace String?
+  deliveryLat    Float?
+  deliveryLng    Float?
+  deliveryPlace  String?
   trackingNumber String?   @db.VarChar(100)
   shippedAt      DateTime?
   deliveredAt    DateTime?
   confirmedAt    DateTime? // When the order was confirmed
 
-  notes     String?   @db.Text
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdBy   User?       @relation("OrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
   confirmedBy User?       @relation("OrderConfirmer", fields: [confirmedById], references: [id], onDelete: SetNull)
@@ -480,11 +481,11 @@ model LotDetail {
 }
 
 enum ArrivalStatus {
-  PENDING      // Not yet verified
-  VERIFIED     // All good
-  DAMAGED      // Some items damaged
-  INCOMPLETE   // Missing items
-  EXCESS       // More than expected
+  PENDING // Not yet verified
+  VERIFIED // All good
+  DAMAGED // Some items damaged
+  INCOMPLETE // Missing items
+  EXCESS // More than expected
 }
 
 // What ACTUALLY arrived (created automatically, updated by admin)
