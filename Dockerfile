@@ -1,21 +1,20 @@
 # -------------------------------
 # Stage 1: Build
 # -------------------------------
-FROM node:22-slim AS builder
+FROM node:22-alpine AS builder
 
 # Build tools + canvas dependencies
-RUN apt-get update && apt-get install -y \
+RUN apk add --no-cache \
     python3 \
     make \
     g++ \
-    build-essential \
-    libcairo2-dev \
-    libpango1.0-dev \
-    libjpeg-dev \
-    libgif-dev \
-    librsvg2-dev \
-    git \
-    && rm -rf /var/lib/apt/lists/*
+    cairo-dev \
+    pango-dev \
+    giflib-dev \
+    jpeg-dev \
+    libpng-dev \
+    bash \
+    git
 
 WORKDIR /app
 
@@ -34,18 +33,16 @@ RUN npm run build
 # -------------------------------
 # Stage 2: Production
 # -------------------------------
-FROM node:22-slim
+FROM node:22-alpine
 
 # Runtime dependencies for canvas
-RUN apt-get update && apt-get install -y \
-    libcairo2 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libjpeg62-turbo \
-    libgif7 \
-    librsvg2-2 \
-    bash \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    cairo \
+    pango \
+    giflib \
+    jpeg \
+    libpng \
+    bash
 
 WORKDIR /app
 
