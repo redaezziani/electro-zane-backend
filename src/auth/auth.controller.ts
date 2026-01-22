@@ -42,15 +42,22 @@ export class AuthController {
     const authResponse = await this.authService.login(loginDto, ip, userAgent);
 
     // Set HttpOnly cookies
-    res.cookie('access_token', authResponse.tokens.accessToken, {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+      path: '/',
+      ...(isProduction && { domain: '.electrozane.com' }),
+    };
+
+    res.cookie('access_token', authResponse.tokens.accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000, // 15 minutes
     });
     res.cookie('refresh_token', authResponse.tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     return authResponse;
@@ -66,15 +73,22 @@ export class AuthController {
     const tokens = await this.authService.refreshTokens({ refreshToken });
 
     // Reset cookies
-    res.cookie('access_token', tokens.accessToken, {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProduction,
+      sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+      path: '/',
+      ...(isProduction && { domain: '.electrozane.com' }),
+    };
+
+    res.cookie('access_token', tokens.accessToken, {
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000, // 15 minutes
     });
     res.cookie('refresh_token', tokens.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
     return tokens;
@@ -88,8 +102,13 @@ export class AuthController {
     await this.authService.logout(refreshToken);
 
     // Clear cookies
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
+    const isProduction = process.env.NODE_ENV === 'production';
+    const clearOptions = {
+      path: '/',
+      ...(isProduction && { domain: '.electrozane.com' }),
+    };
+    res.clearCookie('access_token', clearOptions);
+    res.clearCookie('refresh_token', clearOptions);
 
     return { message: 'Logged out successfully' };
   }

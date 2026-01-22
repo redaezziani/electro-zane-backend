@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-# Check DATABASE_URL
+# Verify DATABASE_URL exists
 if [ -z "$DATABASE_URL" ]; then
   echo "❌ DATABASE_URL is not set!"
   exit 1
@@ -11,7 +11,7 @@ echo "🔹 Running Prisma migrations..."
 npx prisma migrate deploy
 
 echo "🔹 Seeding database..."
-# Adjust this path if your seed file is compiled to dist
+# Adjust path if your seed file is compiled
 if [ -f dist/database/seed.js ]; then
   node dist/database/seed.js
 else
