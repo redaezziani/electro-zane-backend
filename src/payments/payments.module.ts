@@ -5,7 +5,6 @@ import { PaymentService } from './payments.service';
 import { CashPaymentStrategy } from './strategies/cash.strategy';
 import { PaymentController } from './payments.controller';
 import { PaymentEvent } from './payments.event';
-import { EmailService } from 'src/common/services/email.service';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
@@ -13,7 +12,6 @@ import { AuthModule } from '../auth/auth.module';
   providers: [
     PrismaService,
     CashPaymentStrategy,
-    EmailService,
     {
       provide: PaymentService,
       useFactory: (cash: CashPaymentStrategy, prisma: PrismaService) => {

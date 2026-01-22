@@ -25,7 +25,6 @@
     "db:reset": "npm run seed:clear && npm run seed"
   },
   "dependencies": {
-    "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/event-emitter": "^3.0.1",
@@ -49,7 +48,6 @@
     "jsbarcode": "^3.12.1",
     "multer": "^2.0.2",
     "nanoid": "^5.1.5",
-    "nodemailer": "^7.0.6",
     "nuqs": "^2.6.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
