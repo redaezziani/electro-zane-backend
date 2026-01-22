@@ -1,13 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import { seedUsers, clearUsers } from './seeders/user.seeder';
+import { seedPermissions, clearPermissions } from './seeders/permissions.seeder';
 
 const prisma = new PrismaClient();
 
 async function clearAll() {
   console.log('🧹 Clearing existing data...');
 
-  // Clear users only
+  // Clear users and permissions
   await clearUsers();
+  await clearPermissions();
 
   console.log('✅ All data cleared');
 }
@@ -15,6 +17,8 @@ async function clearAll() {
 async function seedAll() {
   console.log('🌱 Seeding all data...');
 
+  // Seed permissions first, then users
+  await seedPermissions();
   await seedUsers();
 
   console.log('✅ All data seeded');

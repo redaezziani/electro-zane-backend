@@ -46,15 +46,18 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, documentFactory);
 
   app.use(cookieParser());
+
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   app.enableCors({
-    origin: 'http://localhost:3000', // frontend URL
+    origin: frontendUrl,
     credentials: true,
   });
 
   app.enableVersioning();
   app.setGlobalPrefix('api');
 
-  await app.listen(8085);
+  const port = process.env.MAIN_APP_PORT || 4000;
+  await app.listen(port);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap();
