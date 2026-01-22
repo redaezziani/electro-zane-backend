@@ -10,9 +10,12 @@ RUN apk add --no-cache \
     g++ \
     cairo-dev \
     pango-dev \
+    pixman-dev \
     giflib-dev \
     jpeg-dev \
     libpng-dev \
+    freetype-dev \
+    pkgconfig \
     bash \
     git
 
