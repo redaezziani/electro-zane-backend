@@ -160,8 +160,8 @@ export class PdfService {
 
   private getFontPath(lang: SupportedLanguage): string | undefined {
     if (lang === 'ar') {
-      // Use absolute path from project root to avoid issues with dist directory
-      return path.join(process.cwd(), 'src/common/fonts/arabic-font.otf');
+      // Use public folder path which is accessible in both dev and production
+      return path.join(process.cwd(), 'public/fonts/arabic-font.otf');
     }
     return undefined; // Use default PDFKit fonts for other languages
   }
