@@ -42,8 +42,10 @@ async function bootstrap() {
       'JWT-auth',
     )
     .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, documentFactory);
+  if (process.env.NODE_ENV === 'development') {
+    const documentFactory = () => SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/docs', app, documentFactory());
+  }
 
   app.use(cookieParser());
 

@@ -494,8 +494,9 @@ export class ProductsController {
 
   // Variant endpoints
   @Post(':productId/variants')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.PRODUCT_CREATE)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Add a variant to a product' })
   @ApiParam({
@@ -532,8 +533,9 @@ export class ProductsController {
   }
 
   @Patch('variants/:variantId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.PRODUCT_UPDATE)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update a product variant' })
   @ApiParam({
@@ -570,8 +572,9 @@ export class ProductsController {
   }
 
   @Delete('variants/:variantId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.PRODUCT_DELETE)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a product variant (soft delete)' })
@@ -604,8 +607,9 @@ export class ProductsController {
 
   // SKU endpoints
   @Post('variants/:variantId/skus')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.PRODUCT_CREATE)
   @ApiBearerAuth()
   @UseInterceptors(FilesInterceptor('images', 10))
   @ApiOperation({ summary: 'Add a SKU to a variant' })
@@ -661,8 +665,9 @@ export class ProductsController {
   }
 
   @Patch('skus/:skuId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.PRODUCT_UPDATE)
   @ApiBearerAuth()
   @UseInterceptors(FilesInterceptor('images', 10))
   @ApiOperation({ summary: 'Update a product SKU' })
@@ -717,8 +722,9 @@ export class ProductsController {
   }
 
   @Delete('skus/:skuId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.PRODUCT_DELETE)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a product SKU (soft delete)' })
@@ -748,8 +754,9 @@ export class ProductsController {
   }
 
   @Delete('skus/images/:imageId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.PRODUCT_DELETE)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a single SKU image' })

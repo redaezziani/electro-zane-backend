@@ -22,7 +22,9 @@ import { UserRole } from '@prisma/client';
 import { PermissionsService } from './permissions.service';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { RolesGuard } from '../guards/roles.guard';
+import { PermissionsGuard } from '../guards/permissions.guard';
 import { Roles } from '../decorators/roles.decorator';
+import { Permissions } from '../decorators/permissions.decorator';
 import { Permission } from './permissions.enum';
 
 class AddPermissionDto {
@@ -49,8 +51,9 @@ class RemovePermissionDto {
 
 @ApiTags('Permissions Management')
 @Controller('permissions')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
 @Roles(UserRole.ADMIN) // Only admins can manage permissions
+@Permissions(Permission.PERMISSION_MANAGE)
 @ApiBearerAuth()
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}

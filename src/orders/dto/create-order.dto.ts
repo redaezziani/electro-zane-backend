@@ -23,13 +23,15 @@ export class OrderItemDto {
 
 export class CreateOrderDto {
   // Customer Information
-  @ApiProperty({ description: 'Customer name', example: 'John Doe' })
+  @ApiPropertyOptional({ description: 'Customer name', example: 'John Doe' })
+  @IsOptional()
   @IsString()
-  customerName: string;
+  customerName?: string;
 
-  @ApiProperty({ description: 'Customer phone number', example: '+1234567890' })
+  @ApiPropertyOptional({ description: 'Customer phone number', example: '+1234567890' })
+  @IsOptional()
   @IsString()
-  customerPhone: string;
+  customerPhone?: string;
 
   @ApiPropertyOptional({ description: 'Customer email address' })
   @IsOptional()

@@ -114,8 +114,8 @@ export class OrdersService {
           totalAmount,
           currency: 'USD',
           language: createOrderDto.language || 'en', // Store the language
-          customerName: createOrderDto.customerName,
-          customerPhone: createOrderDto.customerPhone,
+          customerName: createOrderDto.customerName ?? null,
+          customerPhone: createOrderDto.customerPhone ?? null,
           customerEmail: createOrderDto.customerEmail ?? null,
           customerAddress: createOrderDto.customerAddress ?? undefined,
           notes: createOrderDto.notes ?? null,

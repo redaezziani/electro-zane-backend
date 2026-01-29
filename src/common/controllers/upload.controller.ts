@@ -25,7 +25,10 @@ import { LocalStorageService } from '../services/local-storage.service';
 import { ImageUploadDto, ImageResponseDto } from '../dto/image.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../auth/guards/roles.guard';
+import { PermissionsGuard } from '../../auth/guards/permissions.guard';
 import { Roles } from '../../auth/decorators/roles.decorator';
+import { Permissions } from '../../auth/decorators/permissions.decorator';
+import { Permission } from '../../auth/permissions/permissions.enum';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Upload')
@@ -34,8 +37,9 @@ export class UploadController {
   constructor(private readonly localStorageService: LocalStorageService) {}
 
   @Post('image')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.UPLOAD_IMAGE)
   @ApiBearerAuth()
   @UseInterceptors(FileInterceptor('file'))
   @ApiOperation({ summary: 'Upload a single image' })
@@ -106,8 +110,9 @@ export class UploadController {
   }
 
   @Post('images')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.UPLOAD_IMAGE)
   @ApiBearerAuth()
   @UseInterceptors(FilesInterceptor('files', 10)) // Max 10 files
   @ApiOperation({ summary: 'Upload multiple images' })
@@ -177,8 +182,9 @@ export class UploadController {
   }
 
   @Delete('image/:fileId')
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.UPLOAD_DELETE)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete an image' })
   @ApiParam({

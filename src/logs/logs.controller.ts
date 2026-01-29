@@ -4,13 +4,17 @@ import { LogsService } from './logs.service';
 import { QueryLogsDto, LogType } from './dto/query-logs.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { Permissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/permissions/permissions.enum';
 import { UserRole } from '@prisma/client';
 
 @ApiTags('Logs')
 @Controller('logs')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+@Permissions(Permission.LOG_READ)
 @ApiBearerAuth()
 export class LogsController {
   constructor(private readonly logsService: LogsService) {}

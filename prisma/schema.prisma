@@ -257,9 +257,9 @@ model Order {
   invoiceFileId String? @default("") @db.VarChar(200)
 
   // Customer Information
-  customerName    String  @db.VarChar(100)
+  customerName    String? @db.VarChar(100)
   customerEmail   String? @db.VarChar(255)
-  customerPhone   String  @db.VarChar(20)
+  customerPhone   String? @db.VarChar(20)
   customerAddress Json? // Full address object
 
   // Delivery Information (optional for delivery orders)

@@ -72,4 +72,16 @@ export enum Permission {
   LOT_ARRIVAL_UPDATE = 'lot_arrival:update',
   LOT_ARRIVAL_VERIFY = 'lot_arrival:verify',
   LOT_ARRIVAL_DELETE = 'lot_arrival:delete',
+
+  // Log permissions
+  LOG_READ = 'log:read',
+  LOG_READ_ALL = 'log:read_all',
+
+  // Upload permissions
+  UPLOAD_IMAGE = 'upload:image',
+  UPLOAD_DELETE = 'upload:delete',
+
+  // Permission management permissions
+  PERMISSION_READ = 'permission:read',
+  PERMISSION_MANAGE = 'permission:manage',
 }
