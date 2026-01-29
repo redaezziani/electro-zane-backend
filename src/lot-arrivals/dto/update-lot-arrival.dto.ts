@@ -19,6 +19,11 @@ export class PieceDetailDto {
   @IsOptional()
   @IsString()
   status?: string;
+
+  @ApiPropertyOptional({ example: '#3b82f6', description: 'Color code for this piece' })
+  @IsOptional()
+  @IsString()
+  color?: string;
 }
 
 export class UpdateLotArrivalDto {
@@ -76,4 +81,24 @@ export class UpdateLotArrivalDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ example: '#3b82f6', description: 'Color code for quantity field' })
+  @IsOptional()
+  @IsString()
+  quantityColor?: string;
+
+  @ApiPropertyOptional({ example: '#10b981', description: 'Color code for price field' })
+  @IsOptional()
+  @IsString()
+  priceColor?: string;
+
+  @ApiPropertyOptional({ example: '#f59e0b', description: 'Color code for shipping company field' })
+  @IsOptional()
+  @IsString()
+  shippingCompanyColor?: string;
+
+  @ApiPropertyOptional({ example: '#8b5cf6', description: 'Color code for shipping city field' })
+  @IsOptional()
+  @IsString()
+  shippingCityColor?: string;
 }

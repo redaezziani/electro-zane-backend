@@ -466,8 +466,9 @@ model LotDetail {
   price               Decimal   @db.Decimal(10, 2)
   shippingCompany     String    @db.VarChar(200)
   shippingCompanyCity String    @db.VarChar(100)
-  pieceDetails        Json // {name: string, quantity: number, status: string}[]
+  pieceDetails        Json // {name: string, quantity: number, status: string, color?: string}[]
   notes               String?   @db.Text
+  metadata            Json?     // Stores colors for fields: {quantityColor, priceColor, shippingCompanyColor, shippingCityColor}
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
   deletedAt           DateTime?
