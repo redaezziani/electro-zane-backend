@@ -101,8 +101,11 @@ jobs:
             # Pull latest image
             docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-            # Stop and remove old containers
-            docker compose -f docker-compose.prod.yml down || true
+            # Stop and remove old containers and networks
+            docker compose -f docker-compose.prod.yml down --remove-orphans || true
+
+            # Clean up any dangling networks
+            docker network prune -f || true
 
             # Start services with docker compose
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
