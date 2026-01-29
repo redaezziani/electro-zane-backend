@@ -37,7 +37,7 @@ RUN npm run build
 # -------------------------------
 FROM node:22-slim
 
-# Runtime dependencies for canvas
+# Runtime dependencies for canvas + OpenSSL for Prisma
 RUN apt-get update && apt-get install -y \
     libcairo2 \
     libpango-1.0-0 \
@@ -46,6 +46,7 @@ RUN apt-get update && apt-get install -y \
     libgif7 \
     librsvg2-2 \
     bash \
+    openssl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
