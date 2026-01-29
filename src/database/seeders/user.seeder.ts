@@ -18,6 +18,20 @@ export async function seedUsers() {
       role: UserRole.ADMIN,
       isEmailVerified: true,
     },
+    {
+      email: 'abdellah@electrozane.com',
+      password: 'Admin123!',
+      name: 'Abdellah',
+      role: UserRole.ADMIN,
+      isEmailVerified: true,
+    },
+    {
+      email: 'store@electrozane.com',
+      password: 'Store123!',
+      name: 'Store',
+      role: UserRole.USER,
+      isEmailVerified: true,
+    },
   ];
 
   for (const userData of usersToSeed) {
