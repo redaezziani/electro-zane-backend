@@ -86,6 +86,7 @@ export class OrdersService {
         totalPrice,
         productName: sku.variant.product.name,
         skuCode: sku.sku,
+        variantName: sku.variant.name,
       };
     });
 
@@ -154,18 +155,27 @@ export class OrdersService {
       return newOrder;
     });
 
-    // Generate PDF with language support
+    // Generate PDF with language support and IMEI data
+    const imeiData: Record<string, string> = {};
+    createOrderDto.items.forEach((item, index) => {
+      if (item.imei) {
+        imeiData[order.items[index].id] = item.imei;
+      }
+    });
+
     const { url, fileId } = await this.pdfService.generateOrderPdf(
       {
         ...order,
         items: order.items.map((i) => ({
           ...i,
           name: i.productName,
+          variantName: i.variantName,
           quantity: i.quantity,
           totalPrice: i.totalPrice.toNumber(),
         })),
       },
       (createOrderDto.language as any) || 'en',
+      Object.keys(imeiData).length > 0 ? imeiData : undefined,
     );
 
     const updatedOrder = await this.prisma.order.update({
@@ -379,6 +389,7 @@ export class OrdersService {
           unitPrice,
           totalPrice,
           productName: sku.variant.product.name,
+          variantName: sku.variant.name,
           skuCode: sku.sku,
         };
       });
@@ -453,17 +464,29 @@ export class OrdersService {
         console.error('Error deleting old PDF:', error);
       }
     }
+    // Prepare IMEI data if items were updated
+    const imeiData: Record<string, string> = {};
+    if (updateOrderDto.items) {
+      updateOrderDto.items.forEach((item, index) => {
+        if (item.imei && updatedOrder.items[index]) {
+          imeiData[updatedOrder.items[index].id] = item.imei;
+        }
+      });
+    }
+
     const { url, fileId } = await this.pdfService.generateOrderPdf(
       {
         ...updatedOrder,
         items: updatedOrder.items.map((i) => ({
           ...i,
           name: i.productName,
+          variantName: i.variantName,
           quantity: i.quantity,
           totalPrice: i.totalPrice.toNumber(),
         })),
       },
       (updateOrderDto.language as any) || updatedOrder.language || 'en',
+      Object.keys(imeiData).length > 0 ? imeiData : undefined,
     );
     const finalOrder = await this.prisma.order.update({
       where: { id: updatedOrder.id },

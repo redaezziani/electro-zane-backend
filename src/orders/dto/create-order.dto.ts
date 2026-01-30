@@ -19,6 +19,11 @@ export class OrderItemDto {
   @ApiProperty({ description: 'Quantity of this SKU', example: 1 })
   @IsNumber()
   quantity: number;
+
+  @ApiPropertyOptional({ description: 'IMEI number (for phone products)', example: '123456789012345' })
+  @IsOptional()
+  @IsString()
+  imei?: string;
 }
 
 export class CreateOrderDto {

@@ -297,6 +297,7 @@ model OrderItem {
   unitPrice   Decimal @db.Decimal(10, 2)
   totalPrice  Decimal @db.Decimal(10, 2)
   productName String  @db.VarChar(200) // Snapshot for historical data
+  variantName String? @db.VarChar(200) // Snapshot for historical data
   skuCode     String  @db.VarChar(100) // Snapshot for historical data
 
   order     Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)

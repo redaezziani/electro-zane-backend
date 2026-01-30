@@ -27,6 +27,7 @@ interface InvoiceTranslations {
   orderItems: string;
   sku: string;
   product: string;
+  variant: string;
   qty: string;
   unitPrice: string;
   total: string;
@@ -37,6 +38,8 @@ interface InvoiceTranslations {
   notes: string;
   statusConfirmed: string;
   paymentCompleted: string;
+  imei: string;
+  guarantee: string;
 }
 
 @Injectable()
@@ -61,6 +64,7 @@ export class PdfService {
       orderItems: 'ORDER ITEMS',
       sku: 'SKU',
       product: 'Product',
+      variant: 'Variant',
       qty: 'Qty',
       unitPrice: 'Unit Price',
       total: 'Total',
@@ -71,6 +75,9 @@ export class PdfService {
       notes: 'NOTES',
       statusConfirmed: 'Confirmed',
       paymentCompleted: 'Paid',
+      imei: 'IMEI',
+      guarantee:
+        '30-Day Guarantee: All products come with a 30-day warranty from date of purchase.',
     },
     ar: {
       companyName: 'متجر سفيان',
@@ -89,6 +96,7 @@ export class PdfService {
       orderItems: 'عناصر الطلب',
       sku: 'رمز المنتج',
       product: 'المنتج',
+      variant: 'النوع',
       qty: 'الكمية',
       unitPrice: 'سعر الوحدة',
       total: 'المجموع',
@@ -99,6 +107,9 @@ export class PdfService {
       notes: 'ملاحظات',
       statusConfirmed: 'مؤكد',
       paymentCompleted: 'مدفوع',
+      imei: 'IMEI',
+      guarantee:
+        'ضمان 30 يوماً: جميع المنتجات تأتي مع ضمان 30 يوماً من تاريخ الشراء.',
     },
     fr: {
       companyName: 'Boutique Soufian',
@@ -117,6 +128,7 @@ export class PdfService {
       orderItems: 'ARTICLES COMMANDÉS',
       sku: 'SKU',
       product: 'Produit',
+      variant: 'Variante',
       qty: 'Qté',
       unitPrice: 'Prix unitaire',
       total: 'Total',
@@ -127,6 +139,9 @@ export class PdfService {
       notes: 'NOTES',
       statusConfirmed: 'Confirmé',
       paymentCompleted: 'Payé',
+      imei: 'IMEI',
+      guarantee:
+        "Garantie 30 jours: Tous les produits sont garantis 30 jours à partir de la date d'achat.",
     },
     es: {
       companyName: 'Tienda Soufian',
@@ -145,6 +160,7 @@ export class PdfService {
       orderItems: 'ARTÍCULOS DEL PEDIDO',
       sku: 'SKU',
       product: 'Producto',
+      variant: 'Variante',
       qty: 'Cant',
       unitPrice: 'Precio unitario',
       total: 'Total',
@@ -155,6 +171,9 @@ export class PdfService {
       notes: 'NOTAS',
       statusConfirmed: 'Confirmado',
       paymentCompleted: 'Pagado',
+      imei: 'IMEI',
+      guarantee:
+        'Garantía de 30 días: Todos los productos tienen una garantía de 30 días desde la fecha de compra.',
     },
   };
 
@@ -267,6 +286,7 @@ export class PdfService {
   async generateOrderPdf(
     order: any,
     language: SupportedLanguage = 'es',
+    imeiData?: Record<string, string>, // Map of itemId -> IMEI number
   ): Promise<{ url: string; fileId: string }> {
     const t = this.translations[language];
     const customFont = this.getFontPath(language);
@@ -300,18 +320,46 @@ export class PdfService {
     const fontName = customFont ? 'CustomFont' : 'Helvetica';
     const fontBold = customFont ? 'CustomFont' : 'Helvetica-Bold';
 
-    // Company Header
+    // Add watermark in center of page
+    const logoPath = path.resolve(process.cwd(), 'public/images/logo/img.png');
+    if (fs.existsSync(logoPath)) {
+      try {
+        const centerX = doc.page.width / 2 - 100;
+        const centerY = doc.page.height / 2 - 100;
+        doc.save();
+        doc.opacity(0.08); // Very light watermark
+        doc.image(logoPath, centerX, centerY, { width: 200, height: 200 });
+        doc.opacity(1); // Reset opacity
+        doc.restore();
+      } catch (error) {
+        console.error('Error adding watermark:', error);
+      }
+    }
+
+    // Company Header with Logo
+    if (fs.existsSync(logoPath)) {
+      try {
+        doc.image(logoPath, 50, 40, { width: 60, height: 60 });
+      } catch (error) {
+        console.error('Error loading logo:', error);
+      }
+    }
+
+    doc
+      .fontSize(14)
+      .font(fontBold)
+      .fillColor('#333333')
+      .text('Electrozane', 120, 50, {
+        align: 'left',
+      });
     doc
       .fontSize(10)
       .font(fontName)
       .fillColor('#666666')
-      .text(this.formatRTL(t.companyName, isRTL), 50, 50, {
-        align: isRTL ? 'right' : 'left',
+      .text('Ouazzane, Morocco', 120, 70, {
+        align: 'left',
       });
-    doc.text('City Center, Tangier Morocco', 50, 65, {
-      align: isRTL ? 'right' : 'left',
-    });
-    doc.text('+212 612345678', 50, 80, { align: isRTL ? 'right' : 'left' });
+    doc.text('+212 661-987415', 120, 85, { align: 'left' });
 
     currentY = 160;
 
@@ -363,7 +411,8 @@ export class PdfService {
 
     // Display confirmed by admin if available
     if (order.confirmedBy?.name || order.confirmedBy?.email) {
-      const confirmedName = order.confirmedBy.name || order.confirmedBy.email || 'Admin';
+      const confirmedName =
+        order.confirmedBy.name || order.confirmedBy.email || 'Admin';
       const confirmedByText = `${t.confirmedBy}: ${this.safe(confirmedName)}`;
       doc.text(this.formatRTL(confirmedByText, isRTL), 50, currentY, {
         align: isRTL ? 'right' : 'left',
@@ -482,24 +531,25 @@ export class PdfService {
     });
     currentY += 25;
 
-    // Table Header with better spacing
+    // Table Header with better spacing - Updated layout
     const tableStartY = currentY;
     const tableHeaders = [
-      { text: t.sku, x: 50, width: 80 },
-      { text: t.product, x: 140, width: 180 },
-      { text: t.qty, x: 330, width: 40 },
-      { text: t.unitPrice, x: 380, width: 70 },
-      { text: t.total, x: 460, width: 80 },
+      { text: t.product, x: 50, width: 90 },
+      { text: t.variant, x: 165, width: 75 },
+      { text: t.qty, x: 245, width: 35 },
+      { text: t.unitPrice, x: 285, width: 70 },
+      { text: t.total, x: 360, width: 60 },
+      { text: t.imei, x: 425, width: 70 },
     ];
 
     // Header background
-    doc.rect(50, currentY - 5, pageWidth, 20).fill('#f5f5f5');
+    doc.rect(50, currentY - 5, pageWidth, 20).fill('#e8f4f8');
     doc.fillColor('#000000');
 
     // Header text
     doc.fontSize(9).font(fontBold);
     tableHeaders.forEach((header) => {
-      const align = [t.qty, t.unitPrice, t.total].includes(header.text)
+      const align = [t.qty, t.unitPrice, t.total, t.imei].includes(header.text)
         ? 'right'
         : isRTL
           ? 'right'
@@ -523,7 +573,7 @@ export class PdfService {
     doc.fontSize(8).font(fontName);
     order.items.forEach((item, index) => {
       const rowY = currentY;
-      const rowHeight = 20;
+      const rowHeight = 22;
 
       // Alternate row background
       if (index % 2 === 1) {
@@ -531,38 +581,69 @@ export class PdfService {
         doc.fillColor('#000000');
       }
 
-      // Truncate SKU and Product names
-      const skuText = this.truncateText(doc, this.safe(item.skuCode), 80);
+      // Get product name and variant from item
+      const productName = this.safe(item.productName || item.name);
+      const variantName = this.safe(item.variantName || '');
+      const itemIMEI = imeiData && item.id ? imeiData[item.id] : '';
+
+      // Truncate text to fit new widths
       const productText = this.truncateText(
         doc,
-        this.formatRTL(this.safe(item.name), isRTL),
-        180,
+        this.formatRTL(productName, isRTL),
+        110,
+      );
+      const variantText = this.truncateText(
+        doc,
+        this.formatRTL(variantName, isRTL),
+        75,
       );
 
-      doc.text(skuText, 50, rowY + 3, {
-        width: 80,
+      // Product name (smaller font)
+      doc.fontSize(7);
+      doc.text(productText, 50, rowY + 3, {
+        width: 110,
         align: isRTL ? 'right' : 'left',
       });
-      doc.text(productText, 140, rowY + 3, {
-        width: 180,
+
+      // Variant (smaller font)
+      doc.text(variantText, 165, rowY + 3, {
+        width: 75,
         align: isRTL ? 'right' : 'left',
       });
-      doc.text(this.safe(item.quantity), 330, rowY + 3, {
-        width: 40,
+
+      // Reset font size for other columns
+      doc.fontSize(8);
+
+      // Quantity
+      doc.text(this.safe(item.quantity), 245, rowY + 3, {
+        width: 35,
         align: 'right',
       });
+
+      // Unit price
       doc.text(
         `$${this.safe(item.unitPrice?.toFixed?.(2) ?? '0.00')}`,
-        380,
+        285,
         rowY + 3,
         { width: 70, align: 'right' },
       );
+
+      // Total price
       doc.text(
         `$${this.safe(item.totalPrice?.toFixed?.(2) ?? '0.00')}`,
-        460,
+        360,
         rowY + 3,
-        { width: 80, align: 'right' },
+        { width: 60, align: 'right' },
       );
+
+      // IMEI (if provided for this item)
+      if (itemIMEI) {
+        doc.fontSize(7).text(itemIMEI, 425, rowY + 3, {
+          width: 80,
+          align: 'right',
+        });
+        doc.fontSize(8); // Reset font size
+      }
 
       currentY += rowHeight;
     });
@@ -679,6 +760,15 @@ export class PdfService {
       });
       currentY += 30;
     }
+
+    // Guarantee section
+    doc.fontSize(9).font(fontName).fillColor('#666666');
+    const guaranteeText = this.formatRTL(t.guarantee, isRTL);
+    doc.text(guaranteeText, 50, currentY, {
+      width: pageWidth,
+      align: 'center',
+    });
+    currentY += 30;
 
     // Barcode
     try {
