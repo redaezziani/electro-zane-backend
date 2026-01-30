@@ -36,7 +36,7 @@ import { UserRole } from '@prisma/client';
 @ApiTags('Orders')
 @Controller('orders')
 @UseGuards(JwtAuthGuard, PermissionsGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.MODERATOR)
+@Roles(UserRole.ADMIN, UserRole.MODERATOR, UserRole.USER)
 @ApiBearerAuth()
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}

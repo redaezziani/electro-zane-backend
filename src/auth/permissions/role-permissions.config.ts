@@ -61,24 +61,46 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
 
   [UserRole.USER]: [
-    // Product permissions (read only)
+    // Product permissions
+    Permission.PRODUCT_CREATE,
     Permission.PRODUCT_READ,
+    Permission.PRODUCT_UPDATE,
+    Permission.PRODUCT_DELETE,
 
-    // Category permissions (read only)
+    // Category permissions
+    Permission.CATEGORY_CREATE,
     Permission.CATEGORY_READ,
+    Permission.CATEGORY_UPDATE,
+    Permission.CATEGORY_DELETE,
 
-    // Order permissions (own orders only)
+    // Order permissions
     Permission.ORDER_CREATE,
-    Permission.ORDER_READ, // Only own orders
-    Permission.ORDER_CANCEL, // Only own orders
+    Permission.ORDER_READ,
+    Permission.ORDER_READ_ALL,
+    Permission.ORDER_UPDATE,
+    Permission.ORDER_DELETE,
+    Permission.ORDER_CANCEL,
+    Permission.ORDER_CONFIRM,
 
     // User permissions (own account only)
     Permission.USER_READ, // Only own account
     Permission.USER_UPDATE, // Only own account
 
+    // Inventory permissions
+    Permission.INVENTORY_READ,
+    Permission.INVENTORY_UPDATE,
+    Permission.INVENTORY_ADJUST,
+
+    // Analytics permissions (read only)
+    Permission.ANALYTICS_READ,
+
     // Review permissions
     Permission.REVIEW_CREATE,
     Permission.REVIEW_READ,
+
+    // Upload permissions
+    Permission.UPLOAD_IMAGE,
+    Permission.UPLOAD_DELETE,
   ],
 };
 
