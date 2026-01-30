@@ -327,7 +327,7 @@ export class PdfService {
         const centerX = doc.page.width / 2 - 100;
         const centerY = doc.page.height / 2 - 100;
         doc.save();
-        doc.opacity(0.08); // Very light watermark
+        doc.opacity(0.15); // Slightly more visible watermark
         doc.image(logoPath, centerX, centerY, { width: 200, height: 200 });
         doc.opacity(1); // Reset opacity
         doc.restore();
@@ -762,7 +762,7 @@ export class PdfService {
     }
 
     // Guarantee section
-    doc.fontSize(9).font(fontName).fillColor('#666666');
+    doc.fontSize(10).font(fontBold).fillColor('#333333');
     const guaranteeText = this.formatRTL(t.guarantee, isRTL);
     doc.text(guaranteeText, 50, currentY, {
       width: pageWidth,
