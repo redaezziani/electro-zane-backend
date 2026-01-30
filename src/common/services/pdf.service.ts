@@ -622,7 +622,7 @@ export class PdfService {
 
       // Unit price
       doc.text(
-        `$${this.safe(item.unitPrice?.toFixed?.(2) ?? '0.00')}`,
+        `${this.safe(item.unitPrice?.toFixed?.(2) ?? '0.00')} DH`,
         285,
         rowY + 3,
         { width: 70, align: 'right' },
@@ -630,7 +630,7 @@ export class PdfService {
 
       // Total price
       doc.text(
-        `$${this.safe(item.totalPrice?.toFixed?.(2) ?? '0.00')}`,
+        `${this.safe(item.totalPrice?.toFixed?.(2) ?? '0.00')} DH`,
         360,
         rowY + 3,
         { width: 60, align: 'right' },
@@ -660,19 +660,19 @@ export class PdfService {
     const summaryItems = [
       {
         label: t.subtotal,
-        value: `$${this.safe(order.subtotal?.toFixed?.(2) ?? '0.00')}`,
+        value: `${this.safe(order.subtotal?.toFixed?.(2) ?? '0.00')} DH`,
       },
       {
         label: t.tax,
-        value: `$${this.safe(order.taxAmount?.toFixed?.(2) ?? '0.00')}`,
+        value: `${this.safe(order.taxAmount?.toFixed?.(2) ?? '0.00')} DH`,
       },
       {
         label: t.shipping,
-        value: `$${this.safe(order.shippingAmount?.toFixed?.(2) ?? '0.00')}`,
+        value: `${this.safe(order.shippingAmount?.toFixed?.(2) ?? '0.00')} DH`,
       },
       {
         label: t.discount,
-        value: `-$${this.safe(order.discountAmount?.toFixed?.(2) ?? '0.00')}`,
+        value: `-${this.safe(order.discountAmount?.toFixed?.(2) ?? '0.00')} DH`,
       },
     ];
 
@@ -716,7 +716,7 @@ export class PdfService {
     if (isRTL) {
       // For RTL: total amount on left, label on right
       doc.text(
-        `$${this.safe(order.totalAmount?.toFixed?.(2) ?? '0.00')}`,
+        `${this.safe(order.totalAmount?.toFixed?.(2) ?? '0.00')} DH`,
         summaryStartX,
         currentY + 2,
         {
@@ -735,7 +735,7 @@ export class PdfService {
         align: 'left',
       });
       doc.text(
-        `$${this.safe(order.totalAmount?.toFixed?.(2) ?? '0.00')}`,
+        `${this.safe(order.totalAmount?.toFixed?.(2) ?? '0.00')} DH`,
         summaryStartX + 80,
         currentY + 2,
         {
