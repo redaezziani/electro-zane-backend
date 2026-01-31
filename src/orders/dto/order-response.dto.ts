@@ -14,8 +14,11 @@ export class OrderItemResponseDto {
   @ApiProperty({ description: 'Quantity ordered', example: 1 })
   quantity: number;
 
-  @ApiProperty({ description: 'Price per unit', example: 10.99 })
+  @ApiProperty({ description: 'Standard price per unit from SKU', example: 10.99 })
   unitPrice: number;
+
+  @ApiPropertyOptional({ description: 'Optional custom sell price (if different from unitPrice)', example: 9.99 })
+  sellPrice?: number | null;
 
   @ApiProperty({ description: 'Total price for this item', example: 21.98 })
   totalPrice: number;

@@ -158,7 +158,8 @@ model ProductSKU {
   variantId     String
   sku           String    @unique @db.VarChar(100)
   barcode       String?   @unique @db.VarChar(100)
-  price         Decimal   @db.Decimal(10, 2)
+  initPrice     Decimal   @default(0) @db.Decimal(10, 2) // Initial/Cost price (what we bought it for)
+  price         Decimal   @db.Decimal(10, 2) // Selling price
   stock         Int       @default(0)
   lowStockAlert Int       @default(5)
   weight        Decimal?  @db.Decimal(8, 2) // in grams
@@ -294,7 +295,8 @@ model OrderItem {
   orderId     String
   skuId       String
   quantity    Int
-  unitPrice   Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(10, 2) // Standard price from SKU
+  sellPrice   Decimal? @db.Decimal(10, 2) // Optional: Actual selling price (if different from unitPrice)
   totalPrice  Decimal @db.Decimal(10, 2)
   productName String  @db.VarChar(200) // Snapshot for historical data
   variantName String? @db.VarChar(200) // Snapshot for historical data

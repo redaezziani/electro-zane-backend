@@ -76,13 +76,17 @@ export class OrdersService {
     const itemsData = createOrderDto.items.map((item: OrderItemDto) => {
       const sku = skus.find((s) => s.id === item.skuId)!;
       const unitPrice = new Decimal(sku.price.toString());
-      const totalPrice = unitPrice.mul(item.quantity);
+      // Use sellPrice if provided, otherwise use the standard price
+      const sellPrice = item.sellPrice ? new Decimal(item.sellPrice.toString()) : null;
+      const effectivePrice = sellPrice || unitPrice;
+      const totalPrice = effectivePrice.mul(item.quantity);
       subtotal = subtotal.plus(totalPrice);
 
       return {
         skuId: sku.id,
         quantity: item.quantity,
         unitPrice,
+        sellPrice: sellPrice || undefined,
         totalPrice,
         productName: sku.variant.product.name,
         skuCode: sku.sku,
@@ -380,13 +384,17 @@ export class OrdersService {
       const itemsData = updateOrderDto.items.map((item) => {
         const sku = skus.find((s) => s.id === item.skuId)!;
         const unitPrice = new Decimal(sku.price.toString());
-        const totalPrice = unitPrice.mul(item.quantity);
+        // Use sellPrice if provided, otherwise use the standard price
+        const sellPrice = item.sellPrice ? new Decimal(item.sellPrice.toString()) : null;
+        const effectivePrice = sellPrice || unitPrice;
+        const totalPrice = effectivePrice.mul(item.quantity);
         subtotal = subtotal.plus(totalPrice);
 
         return {
           skuId: sku.id,
           quantity: item.quantity,
           unitPrice,
+          sellPrice: sellPrice || undefined,
           totalPrice,
           productName: sku.variant.product.name,
           variantName: sku.variant.name,
@@ -724,6 +732,7 @@ export class OrdersService {
         skuCode: item.skuCode,
         quantity: item.quantity,
         unitPrice: item.unitPrice.toNumber(),
+        sellPrice: item.sellPrice?.toNumber() || null,
         totalPrice: item.totalPrice.toNumber(),
       })),
     };

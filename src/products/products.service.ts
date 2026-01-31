@@ -735,6 +735,7 @@ export class ProductsService {
         variantId,
         sku: skuValue,
         barcode: barcodeValue,
+        initPrice: createSKUDto.initPrice ?? 0,
         price: createSKUDto.price,
         stock: createSKUDto.stock ?? 0,
         lowStockAlert: createSKUDto.lowStockAlert ?? 5,
@@ -820,6 +821,7 @@ export class ProductsService {
       data: {
         sku: updateSKUDto.sku ?? sku.sku,
         barcode: updateSKUDto.barcode ?? sku.barcode,
+        initPrice: updateSKUDto.initPrice ?? sku.initPrice,
         price: updateSKUDto.price ?? sku.price,
         stock: updateSKUDto.stock ?? sku.stock,
         lowStockAlert: updateSKUDto.lowStockAlert ?? sku.lowStockAlert,

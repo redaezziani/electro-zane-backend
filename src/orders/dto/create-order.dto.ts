@@ -20,6 +20,11 @@ export class OrderItemDto {
   @IsNumber()
   quantity: number;
 
+  @ApiPropertyOptional({ description: 'Optional custom sell price (overrides SKU price)', example: 340 })
+  @IsOptional()
+  @IsNumber()
+  sellPrice?: number;
+
   @ApiPropertyOptional({ description: 'IMEI number (for phone products)', example: '123456789012345' })
   @IsOptional()
   @IsString()

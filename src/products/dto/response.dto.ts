@@ -52,8 +52,14 @@ export class ProductSKUResponseDto {
   })
   barcode?: string;
 
+  @ApiPropertyOptional({
+    description: 'Initial/Cost price (what we bought it for)',
+    example: 150.00
+  })
+  initPrice?: number;
+
   @ApiProperty({
-    description: 'Product price',
+    description: 'Selling price',
     example: 199.99
   })
   price: number;

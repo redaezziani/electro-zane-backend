@@ -456,11 +456,12 @@ export class AnalyticsService {
       dailyData[date].revenue += Number(order.totalAmount);
       dailyData[date].orders += 1;
 
-      // Estimate cost as 65% of selling price (you can adjust this ratio)
-      const estimatedCost = order.items.reduce((sum, item) => {
-        return sum + (Number(item.unitPrice) * item.quantity * 0.65);
+      // Calculate actual cost using initPrice from SKU
+      const actualCost = order.items.reduce((sum, item) => {
+        const costPrice = item.sku?.initPrice ? Number(item.sku.initPrice) : Number(item.unitPrice) * 0.65;
+        return sum + (costPrice * item.quantity);
       }, 0);
-      dailyData[date].cost += estimatedCost;
+      dailyData[date].cost += actualCost;
     });
 
     const dailyBreakdown: DailyProfitDto[] = Object.entries(dailyData)

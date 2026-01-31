@@ -139,6 +139,14 @@ export class CreateProductSKUDto {
   @IsString()
   barcode?: string;
 
+  @ApiPropertyOptional({ description: 'Initial/Cost price (what we bought it for)', example: 300 })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Type(() => Number)
+  initPrice?: number;
+
+  @ApiProperty({ description: 'Selling price', example: 350 })
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @Type(() => Number)
@@ -278,7 +286,14 @@ export class UpdateProductSKUDto {
   @IsString()
   barcode?: string;
 
-  @ApiPropertyOptional({ description: 'Price', example: 99.99 })
+  @ApiPropertyOptional({ description: 'Initial/Cost price (what we bought it for)', example: 300 })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Type(() => Number)
+  initPrice?: number;
+
+  @ApiPropertyOptional({ description: 'Selling price', example: 350 })
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
