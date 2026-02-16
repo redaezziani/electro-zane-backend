@@ -10,15 +10,14 @@ export class LotsService {
   async create(createLotDto: CreateLotDto): Promise<Lot> {
     return this.prisma.lot.create({
       data: {
-        totalPrice: createLotDto.totalPrice,
-        totalQuantity: createLotDto.totalQuantity,
         companyName: createLotDto.companyName,
         companyCity: createLotDto.companyCity,
         notes: createLotDto.notes,
         status: createLotDto.status,
+        // totalPrice and totalQuantity will be calculated from pieces
       },
       include: {
-        details: true,
+        pieces: true,
         arrivals: true,
       },
     });
@@ -44,7 +43,7 @@ export class LotsService {
         where: whereClause,
         orderBy: orderBy || { createdAt: 'desc' },
         include: {
-          details: {
+          pieces: {
             where: { deletedAt: null },
           },
           arrivals: {
@@ -62,11 +61,13 @@ export class LotsService {
     const lot = await this.prisma.lot.findFirst({
       where: { id, deletedAt: null },
       include: {
-        details: {
+        pieces: {
           where: { deletedAt: null },
           include: {
-            arrivals: {
-              where: { deletedAt: null },
+            shipmentPieces: {
+              include: {
+                shipment: true,
+              },
             },
           },
         },
@@ -87,11 +88,13 @@ export class LotsService {
     const lot = await this.prisma.lot.findFirst({
       where: { lotId, deletedAt: null },
       include: {
-        details: {
+        pieces: {
           where: { deletedAt: null },
           include: {
-            arrivals: {
-              where: { deletedAt: null },
+            shipmentPieces: {
+              include: {
+                shipment: true,
+              },
             },
           },
         },
@@ -121,7 +124,7 @@ export class LotsService {
       where: { id },
       data: updateLotDto,
       include: {
-        details: {
+        pieces: {
           where: { deletedAt: null },
         },
         arrivals: {

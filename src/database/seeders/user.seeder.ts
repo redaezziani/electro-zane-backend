@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 export async function seedUsers() {
   console.log('⚠️  User seeding is disabled - users already seeded');
-  return; // Seeding disabled - already done once
+  // return; // Seeding disabled - already done once
 
   console.log('🌱 Seeding users...');
 
@@ -16,7 +16,7 @@ export async function seedUsers() {
   const usersToSeed = [
     {
       email: 'soufiane@electrozane.com',
-      password: 'Admin123!',
+      password: 'Admin123123',
       name: 'Soufiane',
       role: UserRole.ADMIN,
       isEmailVerified: true,

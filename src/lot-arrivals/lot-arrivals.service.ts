@@ -1,11 +1,73 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdateLotArrivalDto } from './dto/update-lot-arrival.dto';
+import { CreateLotArrivalDto, UpdateLotArrivalDto } from './dto/update-lot-arrival.dto';
 import { LotArrival, Prisma } from '@prisma/client';
 
 @Injectable()
 export class LotArrivalsService {
   constructor(private prisma: PrismaService) {}
+
+  /**
+   * Create a new lot arrival record when a shipment arrives
+   */
+  async create(createLotArrivalDto: CreateLotArrivalDto): Promise<LotArrival> {
+    // Validate shipment exists
+    const shipment = await this.prisma.shipment.findFirst({
+      where: { id: createLotArrivalDto.shipmentId, deletedAt: null },
+      include: {
+        pieces: {
+          include: {
+            lotPiece: {
+              include: {
+                lot: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!shipment) {
+      throw new NotFoundException(
+        `Shipment with ID ${createLotArrivalDto.shipmentId} not found`,
+      );
+    }
+
+    // Get the lot ID (assume all pieces in shipment belong to same lot for simplicity)
+    // Or you could create multiple arrivals for different lots
+    const lotId = shipment.pieces[0]?.lotPiece?.lotId;
+
+    if (!lotId) {
+      throw new NotFoundException('No lot found for this shipment');
+    }
+
+    return this.prisma.lotArrival.create({
+      data: {
+        lotId,
+        shipmentId: createLotArrivalDto.shipmentId,
+        quantity: createLotArrivalDto.quantity,
+        totalValue: createLotArrivalDto.totalValue,
+        shippingCompany: createLotArrivalDto.shippingCompany,
+        shippingCompanyCity: createLotArrivalDto.shippingCompanyCity,
+        pieceDetails: createLotArrivalDto.pieceDetails as any,
+        status: createLotArrivalDto.status || 'PENDING',
+        notes: createLotArrivalDto.notes,
+        verifiedBy: createLotArrivalDto.verifiedBy,
+      },
+      include: {
+        lot: true,
+        shipment: {
+          include: {
+            pieces: {
+              include: {
+                lotPiece: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
 
   async findAll(params?: {
     skip?: number;
@@ -28,7 +90,15 @@ export class LotArrivalsService {
         orderBy: orderBy || { createdAt: 'desc' },
         include: {
           lot: true,
-          lotDetail: true,
+          shipment: {
+            include: {
+              pieces: {
+                include: {
+                  lotPiece: true,
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.lotArrival.count({ where: whereClause }),
@@ -42,7 +112,15 @@ export class LotArrivalsService {
       where: { id, deletedAt: null },
       include: {
         lot: true,
-        lotDetail: true,
+        shipment: {
+          include: {
+            pieces: {
+              include: {
+                lotPiece: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -57,29 +135,56 @@ export class LotArrivalsService {
     return this.prisma.lotArrival.findMany({
       where: { lotId, deletedAt: null },
       include: {
-        lotDetail: true,
+        shipment: {
+          include: {
+            pieces: {
+              include: {
+                lotPiece: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  async findByLotDetailId(lotDetailId: string) {
+  async findByShipmentId(shipmentId: string) {
     return this.prisma.lotArrival.findMany({
-      where: { lotDetailId, deletedAt: null },
+      where: { shipmentId, deletedAt: null },
       include: {
         lot: true,
-        lotDetail: true,
+        shipment: {
+          include: {
+            pieces: {
+              include: {
+                lotPiece: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   // This is the main method admins use to verify and update arrival data
-  async update(id: string, updateLotArrivalDto: UpdateLotArrivalDto): Promise<LotArrival> {
+  async update(
+    id: string,
+    updateLotArrivalDto: UpdateLotArrivalDto,
+  ): Promise<LotArrival> {
     const lotArrival = await this.prisma.lotArrival.findFirst({
       where: { id, deletedAt: null },
       include: {
-        lotDetail: true,
+        shipment: {
+          include: {
+            pieces: {
+              include: {
+                lotPiece: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -90,71 +195,81 @@ export class LotArrivalsService {
     // Update with verifiedAt timestamp when status changes from PENDING
     const dataToUpdate: any = {
       quantity: updateLotArrivalDto.quantity,
-      price: updateLotArrivalDto.price,
+      totalValue: updateLotArrivalDto.totalValue,
       shippingCompany: updateLotArrivalDto.shippingCompany,
       shippingCompanyCity: updateLotArrivalDto.shippingCompanyCity,
       pieceDetails: updateLotArrivalDto.pieceDetails as any,
       status: updateLotArrivalDto.status,
       notes: updateLotArrivalDto.notes,
+      verifiedBy: updateLotArrivalDto.verifiedBy,
     };
 
     // Set verifiedAt when admin updates the arrival
-    if (updateLotArrivalDto.status && updateLotArrivalDto.status !== 'PENDING') {
+    if (
+      updateLotArrivalDto.status &&
+      updateLotArrivalDto.status !== 'PENDING'
+    ) {
       dataToUpdate.verifiedAt = new Date();
     }
 
-    // Use transaction to update both arrival and lot detail
+    // Update the lot arrival and update lot piece statuses
     return this.prisma.$transaction(async (tx) => {
-      // Update the lot arrival
       const updatedArrival = await tx.lotArrival.update({
         where: { id },
         data: dataToUpdate,
         include: {
           lot: true,
-          lotDetail: true,
+          shipment: {
+            include: {
+              pieces: {
+                include: {
+                  lotPiece: true,
+                },
+              },
+            },
+          },
         },
       });
 
-      // Update the linked lot detail's piece details with the verified status
-      if (updateLotArrivalDto.status && updateLotArrivalDto.status !== 'PENDING') {
-        const lotDetail = lotArrival.lotDetail;
-        const arrivalPieceDetails = updateLotArrivalDto.pieceDetails || [];
+      // Update lot piece statuses based on arrival verification
+      if (
+        updateLotArrivalDto.status &&
+        updateLotArrivalDto.status !== 'PENDING'
+      ) {
+        const arrivalPieceDetails =
+          (updateLotArrivalDto.pieceDetails as any[]) || [];
 
-        // Get the current piece details from lot detail
-        const currentPieceDetails = (lotDetail.pieceDetails as any[]) || [];
-
-        // Update piece details statuses based on arrival verification
-        const updatedPieceDetails = currentPieceDetails.map((piece: any) => {
-          // Find matching piece in arrival
+        for (const shipmentPiece of lotArrival.shipment.pieces) {
+          // Find matching piece in arrival details
           const arrivalPiece = arrivalPieceDetails.find(
-            (ap: any) => ap.name === piece.name,
+            (ap: any) => ap.name === shipmentPiece.lotPiece.name,
           );
 
           if (arrivalPiece) {
-            // Update status based on arrival status
-            let pieceStatus = 'verified';
+            // Determine status based on arrival status
+            let pieceStatus = 'ARRIVED';
             if (updateLotArrivalDto.status === 'DAMAGED') {
-              pieceStatus = 'damaged';
+              pieceStatus = 'DAMAGED';
             } else if (updateLotArrivalDto.status === 'INCOMPLETE') {
-              pieceStatus = 'incomplete';
-            } else if (updateLotArrivalDto.status === 'EXCESS') {
-              pieceStatus = 'excess';
+              pieceStatus = 'AVAILABLE'; // Partially arrived
+            } else if (updateLotArrivalDto.status === 'VERIFIED') {
+              pieceStatus = 'ARRIVED';
             }
 
-            return {
-              ...piece,
-              status: pieceStatus,
-            };
+            // Update lot piece status
+            await tx.lotPiece.update({
+              where: { id: shipmentPiece.lotPieceId },
+              data: { status: pieceStatus as any },
+            });
           }
+        }
 
-          return piece;
-        });
-
-        // Update the lot detail with the new piece details
-        await tx.lotDetail.update({
-          where: { id: lotArrival.lotDetailId },
+        // Update shipment status to ARRIVED
+        await tx.shipment.update({
+          where: { id: lotArrival.shipmentId },
           data: {
-            pieceDetails: updatedPieceDetails as any,
+            status: 'ARRIVED',
+            actualArrival: new Date(),
           },
         });
       }

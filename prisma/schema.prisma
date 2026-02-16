@@ -437,14 +437,14 @@ enum LotStatus {
   CANCELLED
 }
 
-// Main shipping lot
+// Main shipping lot - Container for pieces
 model Lot {
   id            String    @id @default(uuid())
   lotId         Int       @unique @default(autoincrement()) // Human-readable ID: 1, 2, 3, 4...
-  totalPrice    Decimal   @db.Decimal(10, 2)
-  totalQuantity Int
-  companyName   String    @db.VarChar(200)
-  companyCity   String    @db.VarChar(100)
+  totalPrice    Decimal   @default(0) @db.Decimal(10, 2) // Auto-calculated from pieces
+  totalQuantity Int       @default(0) // Auto-calculated from pieces
+  companyName   String    @db.VarChar(200) // Supplier company
+  companyCity   String    @db.VarChar(100) // Supplier city
   status        LotStatus @default(PENDING)
   notes         String?   @db.Text
   createdAt     DateTime  @default(now())
@@ -452,7 +452,7 @@ model Lot {
   deletedAt     DateTime?
 
   // Relations
-  details  LotDetail[]
+  pieces   LotPiece[]   // Individual items in this lot (S22 Ultra, iPhone, etc.)
   arrivals LotArrival[]
 
   @@index([lotId])
@@ -460,28 +460,99 @@ model Lot {
   @@index([createdAt])
 }
 
-// Details of what's IN the lot (what was sent)
-model LotDetail {
-  id                  String    @id @default(uuid())
-  detailId            Int       @unique @default(autoincrement()) // Human-readable ID
-  lotId               String
-  quantity            Int
-  price               Decimal   @db.Decimal(10, 2)
-  shippingCompany     String    @db.VarChar(200)
-  shippingCompanyCity String    @db.VarChar(100)
-  pieceDetails        Json // {name: string, quantity: number, status: string, color?: string}[]
-  notes               String?   @db.Text
-  metadata            Json?     // Stores colors for fields: {quantityColor, priceColor, shippingCompanyColor, shippingCityColor}
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+enum PieceStatus {
+  NEW
+  USED
+  REFURBISHED
+  DAMAGED
+  AVAILABLE
+  SHIPPED
+  ARRIVED
+}
+
+// Individual pieces/items within a lot
+// Example: "S22 Ultra 256GB - 10 pieces - Status: New"
+model LotPiece {
+  id          String      @id @default(uuid())
+  pieceId     Int         @unique @default(autoincrement()) // Human-readable ID
+  lotId       String
+  name        String      @db.VarChar(200) // "S22 Ultra 256GB", "iPhone 14 Pro 128GB"
+  quantity    Int // Number of units (e.g., 10 pieces)
+  unitPrice   Decimal     @db.Decimal(10, 2) // Price per unit
+  totalPrice  Decimal     @db.Decimal(10, 2) // unitPrice * quantity
+  status      PieceStatus @default(NEW) // NEW, USED, REFURBISHED, etc.
+  color       String?     @db.VarChar(50) // UI color coding (optional)
+  notes       String?     @db.Text
+  metadata    Json? // Additional flexible data
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+
+  // Relations
+  lot            Lot             @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  shipmentPieces ShipmentPiece[] // Can be split across multiple shipments
+
+  @@index([pieceId])
+  @@index([lotId])
+  @@index([status])
+  @@index([name]) // Search by item name
+}
+
+enum ShipmentStatus {
+  PENDING
+  IN_TRANSIT
+  ARRIVED
+  VERIFIED
+  CANCELLED
+}
+
+// Shipment - Contains pieces from multiple lots
+model Shipment {
+  id                  String          @id @default(uuid())
+  shipmentId          Int             @unique @default(autoincrement())
+  shippingCompany     String          @db.VarChar(200) // DHL, FedEx, etc.
+  shippingCompanyCity String          @db.VarChar(100)
+  status              ShipmentStatus  @default(PENDING)
+  trackingNumber      String?         @db.VarChar(100)
+  estimatedArrival    DateTime?
+  actualArrival       DateTime?
+  totalPieces         Int             @default(0) // Calculated from shipmentPieces
+  totalValue          Decimal         @default(0) @db.Decimal(10, 2) // Calculated total
+  notes               String?         @db.Text
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
   deletedAt           DateTime?
 
   // Relations
-  lot      Lot          @relation(fields: [lotId], references: [id], onDelete: Cascade)
-  arrivals LotArrival[]
+  pieces   ShipmentPiece[] // Pieces from different lots in this shipment
+  arrivals LotArrival[] // Arrival records when shipment arrives
 
-  @@index([detailId])
-  @@index([lotId])
+  @@index([shipmentId])
+  @@index([status])
+  @@index([trackingNumber])
+  @@index([createdAt])
+}
+
+// Junction: Which pieces go in which shipment
+// Example: Shipment #1 contains:
+// - 5 pieces of "S22 Ultra" from Lot #1
+// - 3 pieces of "iPhone 14" from Lot #2
+model ShipmentPiece {
+  id             String   @id @default(uuid())
+  shipmentId     String
+  lotPieceId     String
+  quantityShipped Int // How many of this piece are being shipped (can be partial)
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  lotPiece LotPiece @relation(fields: [lotPieceId], references: [id], onDelete: Cascade)
+
+  @@unique([shipmentId, lotPieceId]) // Each lot piece can only be added once per shipment
+  @@index([shipmentId])
+  @@index([lotPieceId])
 }
 
 enum ArrivalStatus {
@@ -492,30 +563,32 @@ enum ArrivalStatus {
   EXCESS // More than expected
 }
 
-// What ACTUALLY arrived (created automatically, updated by admin)
+// What ACTUALLY arrived for a shipment
 model LotArrival {
   id                  String        @id @default(uuid())
-  arrivalId           Int           @unique @default(autoincrement()) // Human-readable ID
-  lotId               String
-  lotDetailId         String // Link to compare expected vs actual
-  quantity            Int
-  price               Decimal       @db.Decimal(10, 2)
+  arrivalId           Int           @unique @default(autoincrement())
+  lotId               String // Which lot this belongs to
+  shipmentId          String // Which shipment arrived
+  quantity            Int // Total quantity that arrived
+  totalValue          Decimal       @db.Decimal(10, 2) // Total value of arrival
   shippingCompany     String        @db.VarChar(200)
   shippingCompanyCity String        @db.VarChar(100)
-  pieceDetails        Json // {name: string, quantity: number, status: string}[]
+  pieceDetails        Json // Detailed breakdown: [{name, quantityExpected, quantityReceived, status, notes}]
   status              ArrivalStatus @default(PENDING)
   notes               String?       @db.Text
-  verifiedAt          DateTime? // When admin verified/updated
+  verifiedAt          DateTime? // When admin verified the arrival
+  verifiedBy          String? // Admin user ID who verified
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
   deletedAt           DateTime?
 
   // Relations
-  lot       Lot       @relation(fields: [lotId], references: [id], onDelete: Cascade)
-  lotDetail LotDetail @relation(fields: [lotDetailId], references: [id], onDelete: Cascade)
+  lot      Lot      @relation(fields: [lotId], references: [id], onDelete: Cascade)
+  shipment Shipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
 
   @@index([arrivalId])
   @@index([lotId])
-  @@index([lotDetailId])
+  @@index([shipmentId])
   @@index([status])
+  @@index([createdAt])
 }

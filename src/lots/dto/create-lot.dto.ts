@@ -4,26 +4,12 @@ import { LotStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 export class CreateLotDto {
-  @ApiProperty({ example: 1500.50, description: 'Total price of the lot' })
-  @IsNotEmpty()
-  @IsNumber()
-  @Type(() => Number)
-  @Min(0)
-  totalPrice: number;
-
-  @ApiProperty({ example: 100, description: 'Total quantity of items in the lot' })
-  @IsNotEmpty()
-  @IsNumber()
-  @Type(() => Number)
-  @Min(1)
-  totalQuantity: number;
-
-  @ApiProperty({ example: 'DHL Express', description: 'Shipping company name' })
+  @ApiProperty({ example: 'Supplier Inc', description: 'Supplier company name' })
   @IsNotEmpty()
   @IsString()
   companyName: string;
 
-  @ApiProperty({ example: 'New York', description: 'Shipping company city' })
+  @ApiProperty({ example: 'New York', description: 'Supplier company city' })
   @IsNotEmpty()
   @IsString()
   companyCity: string;
@@ -40,26 +26,12 @@ export class CreateLotDto {
 }
 
 export class UpdateLotDto {
-  @ApiPropertyOptional({ example: 1500.50, description: 'Total price of the lot' })
-  @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  @Min(0)
-  totalPrice?: number;
-
-  @ApiPropertyOptional({ example: 100, description: 'Total quantity of items in the lot' })
-  @IsOptional()
-  @IsNumber()
-  @Type(() => Number)
-  @Min(1)
-  totalQuantity?: number;
-
-  @ApiPropertyOptional({ example: 'DHL Express', description: 'Shipping company name' })
+  @ApiPropertyOptional({ example: 'Supplier Inc', description: 'Supplier company name' })
   @IsOptional()
   @IsString()
   companyName?: string;
 
-  @ApiPropertyOptional({ example: 'New York', description: 'Shipping company city' })
+  @ApiPropertyOptional({ example: 'New York', description: 'Supplier company city' })
   @IsOptional()
   @IsString()
   companyCity?: string;

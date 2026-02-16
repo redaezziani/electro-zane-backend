@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Body,
   Patch,
   Param,
@@ -20,7 +21,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { LotArrivalsService } from './lot-arrivals.service';
-import { UpdateLotArrivalDto } from './dto/update-lot-arrival.dto';
+import { CreateLotArrivalDto, UpdateLotArrivalDto } from './dto/update-lot-arrival.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -35,6 +36,19 @@ import { UserRole } from '@prisma/client';
 @ApiBearerAuth()
 export class LotArrivalsController {
   constructor(private readonly lotArrivalsService: LotArrivalsService) {}
+
+  @Post()
+  @Roles(UserRole.ADMIN, UserRole.MODERATOR)
+  @Permissions(Permission.LOT_ARRIVAL_CREATE)
+  @ApiOperation({ summary: 'Create a new lot arrival record for a shipment' })
+  @ApiResponse({ status: 201, description: 'Lot arrival created successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - insufficient permissions' })
+  @ApiResponse({ status: 404, description: 'Shipment not found' })
+  async create(@Body() createLotArrivalDto: CreateLotArrivalDto) {
+    return this.lotArrivalsService.create(createLotArrivalDto);
+  }
 
   @Get()
   @Permissions(Permission.LOT_ARRIVAL_READ)
@@ -68,13 +82,13 @@ export class LotArrivalsController {
     return this.lotArrivalsService.findByLotId(lotId);
   }
 
-  @Get('by-lot-detail/:lotDetailId')
+  @Get('by-shipment/:shipmentId')
   @Permissions(Permission.LOT_ARRIVAL_READ)
-  @ApiOperation({ summary: 'Get all lot arrivals for a specific lot detail' })
-  @ApiParam({ name: 'lotDetailId', description: 'Lot detail UUID' })
+  @ApiOperation({ summary: 'Get all lot arrivals for a specific shipment' })
+  @ApiParam({ name: 'shipmentId', description: 'Shipment UUID' })
   @ApiResponse({ status: 200, description: 'Lot arrivals retrieved successfully' })
-  async findByLotDetailId(@Param('lotDetailId', ParseUUIDPipe) lotDetailId: string) {
-    return this.lotArrivalsService.findByLotDetailId(lotDetailId);
+  async findByShipmentId(@Param('shipmentId', ParseUUIDPipe) shipmentId: string) {
+    return this.lotArrivalsService.findByShipmentId(shipmentId);
   }
 
   @Get(':id')

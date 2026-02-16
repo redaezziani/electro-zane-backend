@@ -13,8 +13,10 @@ import { SettingsModule } from './settings/settings.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { LogsModule } from './logs/logs.module';
 import { LotsModule } from './lots/lots.module';
-import { LotDetailsModule } from './lot-details/lot-details.module';
 import { LotArrivalsModule } from './lot-arrivals/lot-arrivals.module';
+import { LotPiecesModule } from './lot-pieces/lot-pieces.module';
+import { ShipmentsModule } from './shipments/shipments.module';
+import { ShipmentPiecesModule } from './shipment-pieces/shipment-pieces.module';
 
 @Module({
   imports: [
@@ -32,8 +34,10 @@ import { LotArrivalsModule } from './lot-arrivals/lot-arrivals.module';
     EventEmitterModule.forRoot(),
     LogsModule,
     LotsModule,
-    LotDetailsModule,
     LotArrivalsModule,
+    LotPiecesModule,
+    ShipmentsModule,
+    ShipmentPiecesModule,
   ],
   controllers: [],
   providers: [],
