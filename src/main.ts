@@ -11,26 +11,9 @@ async function bootstrap() {
 
   /**
    * -----------------------------------------------------
-   * Static Assets
+   * CORS - Must be enabled FIRST to handle preflight requests
    * -----------------------------------------------------
    */
-  app.useStaticAssets(join(__dirname, '..', 'public'), {
-    prefix: '/',
-  });
-
-  
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
-
-  app.use(cookieParser());
-
-
   app.enableCors({
     origin: [
       'https://electrozane.com',
@@ -48,7 +31,29 @@ async function bootstrap() {
     ],
     exposedHeaders: ['Authorization'],
     optionsSuccessStatus: 204,
+    preflightContinue: false,
   });
+
+  /**
+   * -----------------------------------------------------
+   * Static Assets
+   * -----------------------------------------------------
+   */
+  app.useStaticAssets(join(__dirname, '..', 'public'), {
+    prefix: '/',
+  });
+
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+
+  app.use(cookieParser());
 
   app.setGlobalPrefix('api');
   app.enableVersioning();
