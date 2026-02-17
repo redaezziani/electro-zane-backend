@@ -5,7 +5,7 @@ const prisma = new PrismaClient();
 
 export async function seedUsers() {
   console.log('⚠️  User seeding is disabled - users already seeded');
-  // return; // Seeding disabled - already done once
+  return; // Seeding disabled - already done once
 
   console.log('🌱 Seeding users...');
 
