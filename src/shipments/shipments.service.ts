@@ -303,6 +303,22 @@ export class ShipmentsService {
       });
     }
 
+    // Sync shared fields to related LotArrivals
+    const arrivalSync: Record<string, any> = {};
+    if (updateShipmentDto.shippingCompany !== undefined)
+      arrivalSync.shippingCompany = updateShipmentDto.shippingCompany;
+    if (updateShipmentDto.shippingCompanyCity !== undefined)
+      arrivalSync.shippingCompanyCity = updateShipmentDto.shippingCompanyCity;
+    if (updateShipmentDto.notes !== undefined)
+      arrivalSync.notes = updateShipmentDto.notes;
+
+    if (Object.keys(arrivalSync).length > 0) {
+      await this.prisma.lotArrival.updateMany({
+        where: { shipmentId: id, deletedAt: null },
+        data: arrivalSync,
+      });
+    }
+
     return updated;
   }
 
@@ -315,10 +331,18 @@ export class ShipmentsService {
       throw new NotFoundException(`Shipment with ID ${id} not found`);
     }
 
-    await this.prisma.shipment.update({
-      where: { id },
-      data: { deletedAt: new Date() },
-    });
+    const now = new Date();
+
+    await this.prisma.$transaction([
+      this.prisma.lotArrival.updateMany({
+        where: { shipmentId: id, deletedAt: null },
+        data: { deletedAt: now },
+      }),
+      this.prisma.shipment.update({
+        where: { id },
+        data: { deletedAt: now },
+      }),
+    ]);
   }
 
   /**
