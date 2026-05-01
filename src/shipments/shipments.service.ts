@@ -8,17 +8,22 @@ import {
   CreateShipmentDto,
   UpdateShipmentDto,
 } from './dto/create-shipment.dto';
+import { LotArrivalsService } from '../lot-arrivals/lot-arrivals.service';
 import { Shipment, Prisma } from '@prisma/client';
 
 @Injectable()
 export class ShipmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private lotArrivalsService: LotArrivalsService,
+  ) {}
 
   async create(createShipmentDto: CreateShipmentDto): Promise<Shipment> {
-    // Validate lot pieces exist and have enough quantity
+    // Validate lot pieces exist and have enough remaining quantity
     for (const piece of createShipmentDto.pieces) {
       const lotPiece = await this.prisma.lotPiece.findFirst({
         where: { id: piece.lotPieceId, deletedAt: null },
+        include: { shipmentPieces: true },
       });
 
       if (!lotPiece) {
@@ -27,9 +32,15 @@ export class ShipmentsService {
         );
       }
 
-      if (lotPiece.quantity < piece.quantityShipped) {
+      const alreadyShipped = lotPiece.shipmentPieces.reduce(
+        (sum, sp) => sum + sp.quantityShipped,
+        0,
+      );
+      const availableQuantity = lotPiece.quantity - alreadyShipped;
+
+      if (availableQuantity < piece.quantityShipped) {
         throw new BadRequestException(
-          `Insufficient quantity for lot piece ${lotPiece.name}. Available: ${lotPiece.quantity}, Requested: ${piece.quantityShipped}`,
+          `Insufficient quantity for lot piece ${lotPiece.name}. Available: ${availableQuantity}, Requested: ${piece.quantityShipped}`,
         );
       }
     }
@@ -69,13 +80,53 @@ export class ShipmentsService {
     // Update shipment totals
     await this.updateShipmentTotals(shipment.id);
 
-    // Update lot piece status to SHIPPED
+    // Update lot piece status: only mark SHIPPED if all quantity is now in shipments
     for (const piece of createShipmentDto.pieces) {
-      await this.prisma.lotPiece.update({
+      const lotPiece = await this.prisma.lotPiece.findFirst({
         where: { id: piece.lotPieceId },
-        data: { status: 'SHIPPED' },
+        include: { shipmentPieces: true },
       });
+
+      if (lotPiece) {
+        const totalShipped = lotPiece.shipmentPieces.reduce(
+          (sum, sp) => sum + sp.quantityShipped,
+          0,
+        );
+        const newStatus = totalShipped >= lotPiece.quantity ? 'SHIPPED' : 'AVAILABLE';
+        await this.prisma.lotPiece.update({
+          where: { id: piece.lotPieceId },
+          data: { status: newStatus },
+        });
+      }
     }
+
+    // Auto-create a pending LotArrival for this shipment
+    const totalQty = shipment.pieces.reduce(
+      (sum, sp) => sum + sp.quantityShipped,
+      0,
+    );
+    const totalValue = shipment.pieces.reduce(
+      (sum, sp) => sum + Number(sp.lotPiece.unitPrice) * sp.quantityShipped,
+      0,
+    );
+    const pieceDetails = shipment.pieces.map((sp) => ({
+      name: sp.lotPiece.name,
+      quantityExpected: sp.quantityShipped,
+      quantityReceived: sp.quantityShipped,
+      status: 'pending',
+    }));
+
+    await this.lotArrivalsService.create({
+      shipmentId: shipment.id,
+      quantity: totalQty,
+      totalValue,
+      shippingCompany: createShipmentDto.shippingCompany,
+      shippingCompanyCity: createShipmentDto.shippingCompanyCity ?? '',
+      pieceDetails,
+      status: undefined,
+      notes: createShipmentDto.notes,
+      verifiedBy: undefined,
+    });
 
     return this.findOne(shipment.id);
   }
@@ -180,6 +231,12 @@ export class ShipmentsService {
   ): Promise<Shipment> {
     const shipment = await this.prisma.shipment.findFirst({
       where: { id, deletedAt: null },
+      include: {
+        pieces: {
+          include: { lotPiece: true },
+        },
+        arrivals: { where: { deletedAt: null } },
+      },
     });
 
     if (!shipment) {
@@ -196,24 +253,57 @@ export class ShipmentsService {
       updateData.actualArrival = new Date(updateShipmentDto.actualArrival);
     }
 
-    return this.prisma.shipment.update({
+    const updated = await this.prisma.shipment.update({
       where: { id },
       data: updateData,
       include: {
         pieces: {
           include: {
             lotPiece: {
-              include: {
-                lot: true,
-              },
+              include: { lot: true },
             },
           },
         },
-        arrivals: {
-          where: { deletedAt: null },
-        },
+        arrivals: { where: { deletedAt: null } },
       },
     });
+
+    // Auto-create a LotArrival when shipment is first marked as ARRIVED
+    const becomingArrived =
+      updateShipmentDto.status === 'ARRIVED' &&
+      shipment.status !== 'ARRIVED' &&
+      shipment.arrivals.length === 0;
+
+    if (becomingArrived && shipment.pieces.length > 0) {
+      const totalQty = shipment.pieces.reduce(
+        (sum, sp) => sum + sp.quantityShipped,
+        0,
+      );
+      const totalValue = shipment.pieces.reduce(
+        (sum, sp) => sum + Number(sp.lotPiece.unitPrice) * sp.quantityShipped,
+        0,
+      );
+      const pieceDetails = shipment.pieces.map((sp) => ({
+        name: sp.lotPiece.name,
+        quantityExpected: sp.quantityShipped,
+        quantityReceived: sp.quantityShipped,
+        status: 'pending',
+      }));
+
+      await this.lotArrivalsService.create({
+        shipmentId: id,
+        quantity: totalQty,
+        totalValue,
+        shippingCompany: shipment.shippingCompany,
+        shippingCompanyCity: shipment.shippingCompanyCity ?? '',
+        pieceDetails,
+        status: undefined,
+        notes: undefined,
+        verifiedBy: undefined,
+      });
+    }
+
+    return updated;
   }
 
   async remove(id: string): Promise<void> {

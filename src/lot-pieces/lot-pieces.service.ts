@@ -98,7 +98,7 @@ export class LotPiecesService {
       deletedAt: null,
     };
 
-    const [pieces, total] = await Promise.all([
+    const [rawPieces, total] = await Promise.all([
       this.prisma.lotPiece.findMany({
         where: whereClause,
         orderBy: { createdAt: 'asc' },
@@ -113,6 +113,14 @@ export class LotPiecesService {
       }),
       this.prisma.lotPiece.count({ where: whereClause }),
     ]);
+
+    const pieces = rawPieces.map((piece) => {
+      const totalShipped = piece.shipmentPieces.reduce(
+        (sum, sp) => sum + sp.quantityShipped,
+        0,
+      );
+      return { ...piece, availableQuantity: piece.quantity - totalShipped };
+    });
 
     return { pieces, total };
   }

@@ -29,9 +29,10 @@ export class ShipmentPiecesService {
       );
     }
 
-    // Validate lot piece exists and has enough quantity
+    // Validate lot piece exists and has enough remaining quantity
     const lotPiece = await this.prisma.lotPiece.findFirst({
       where: { id: createShipmentPieceDto.lotPieceId, deletedAt: null },
+      include: { shipmentPieces: true },
     });
 
     if (!lotPiece) {
@@ -40,9 +41,15 @@ export class ShipmentPiecesService {
       );
     }
 
-    if (lotPiece.quantity < createShipmentPieceDto.quantityShipped) {
+    const alreadyShipped = lotPiece.shipmentPieces.reduce(
+      (sum, sp) => sum + sp.quantityShipped,
+      0,
+    );
+    const remainingQuantity = lotPiece.quantity - alreadyShipped;
+
+    if (remainingQuantity < createShipmentPieceDto.quantityShipped) {
       throw new BadRequestException(
-        `Insufficient quantity for lot piece ${lotPiece.name}. Available: ${lotPiece.quantity}, Requested: ${createShipmentPieceDto.quantityShipped}`,
+        `Insufficient quantity for lot piece ${lotPiece.name}. Available: ${remainingQuantity}, Requested: ${createShipmentPieceDto.quantityShipped}`,
       );
     }
 
