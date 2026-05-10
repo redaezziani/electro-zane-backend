@@ -222,6 +222,10 @@ export class ShipmentPiecesService {
       throw new NotFoundException(`Shipment piece with ID ${id} not found`);
     }
 
+    const lotPiece = await this.prisma.lotPiece.findUnique({
+      where: { id: shipmentPiece.lotPieceId },
+    });
+
     await this.prisma.shipmentPiece.delete({
       where: { id },
     });
@@ -229,17 +233,25 @@ export class ShipmentPiecesService {
     // Update shipment totals
     await this.updateShipmentTotals(shipmentPiece.shipmentId);
 
-    // Update lot piece status back to AVAILABLE if not in any other shipment
-    const otherShipments = await this.prisma.shipmentPiece.count({
+    // Recalculate lot piece status based on how much is still in other shipments
+    const remaining = await this.prisma.shipmentPiece.findMany({
       where: { lotPieceId: shipmentPiece.lotPieceId },
     });
 
-    if (otherShipments === 0) {
-      await this.prisma.lotPiece.update({
-        where: { id: shipmentPiece.lotPieceId },
-        data: { status: 'AVAILABLE' },
-      });
-    }
+    const totalStillShipped = remaining.reduce(
+      (sum, sp) => sum + sp.quantityShipped,
+      0,
+    );
+
+    const newStatus =
+      lotPiece && totalStillShipped >= lotPiece.quantity
+        ? 'SHIPPED'
+        : 'AVAILABLE';
+
+    await this.prisma.lotPiece.update({
+      where: { id: shipmentPiece.lotPieceId },
+      data: { status: newStatus },
+    });
   }
 
   /**

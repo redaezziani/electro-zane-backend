@@ -325,6 +325,13 @@ export class ShipmentsService {
   async remove(id: string): Promise<void> {
     const shipment = await this.prisma.shipment.findFirst({
       where: { id, deletedAt: null },
+      include: {
+        pieces: {
+          include: {
+            lotPiece: true,
+          },
+        },
+      },
     });
 
     if (!shipment) {
@@ -333,16 +340,44 @@ export class ShipmentsService {
 
     const now = new Date();
 
-    await this.prisma.$transaction([
-      this.prisma.lotArrival.updateMany({
+    await this.prisma.$transaction(async (tx) => {
+      // Soft-delete related LotArrivals
+      await tx.lotArrival.updateMany({
         where: { shipmentId: id, deletedAt: null },
         data: { deletedAt: now },
-      }),
-      this.prisma.shipment.update({
+      });
+
+      // Remove all ShipmentPiece records for this shipment
+      await tx.shipmentPiece.deleteMany({
+        where: { shipmentId: id },
+      });
+
+      // Roll back LotPiece statuses based on remaining shipments
+      for (const piece of shipment.pieces) {
+        const remaining = await tx.shipmentPiece.findMany({
+          where: { lotPieceId: piece.lotPieceId },
+        });
+
+        const totalStillShipped = remaining.reduce(
+          (sum, sp) => sum + sp.quantityShipped,
+          0,
+        );
+
+        const newStatus =
+          totalStillShipped >= piece.lotPiece.quantity ? 'SHIPPED' : 'AVAILABLE';
+
+        await tx.lotPiece.update({
+          where: { id: piece.lotPieceId },
+          data: { status: newStatus },
+        });
+      }
+
+      // Soft-delete the shipment itself
+      await tx.shipment.update({
         where: { id },
         data: { deletedAt: now },
-      }),
-    ]);
+      });
+    });
   }
 
   /**
