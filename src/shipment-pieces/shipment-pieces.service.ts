@@ -185,13 +185,23 @@ export class ShipmentPiecesService {
     }
 
     // Validate quantity if being updated
-    if (
-      updateShipmentPieceDto.quantityShipped &&
-      shipmentPiece.lotPiece.quantity < updateShipmentPieceDto.quantityShipped
-    ) {
-      throw new BadRequestException(
-        `Insufficient quantity for lot piece ${shipmentPiece.lotPiece.name}. Available: ${shipmentPiece.lotPiece.quantity}, Requested: ${updateShipmentPieceDto.quantityShipped}`,
-      );
+    if (updateShipmentPieceDto.quantityShipped !== undefined) {
+      // Calculate how much is shipped in OTHER shipments (excluding this piece)
+      const otherShipments = await this.prisma.shipmentPiece.aggregate({
+        where: {
+          lotPieceId: shipmentPiece.lotPieceId,
+          id: { not: id },
+        },
+        _sum: { quantityShipped: true },
+      });
+      const otherShipped = otherShipments._sum.quantityShipped ?? 0;
+      const available = shipmentPiece.lotPiece.quantity - otherShipped;
+
+      if (updateShipmentPieceDto.quantityShipped > available) {
+        throw new BadRequestException(
+          `Insufficient quantity for lot piece ${shipmentPiece.lotPiece.name}. Available: ${available}, Requested: ${updateShipmentPieceDto.quantityShipped}`,
+        );
+      }
     }
 
     const updated = await this.prisma.shipmentPiece.update({
@@ -209,6 +219,20 @@ export class ShipmentPiecesService {
 
     // Update shipment totals
     await this.updateShipmentTotals(shipmentPiece.shipmentId);
+
+    // Recalculate lot piece status based on total shipped across all shipments
+    const allShipped = await this.prisma.shipmentPiece.aggregate({
+      where: { lotPieceId: shipmentPiece.lotPieceId },
+      _sum: { quantityShipped: true },
+    });
+    const totalShipped = allShipped._sum.quantityShipped ?? 0;
+    const newStatus =
+      totalShipped >= shipmentPiece.lotPiece.quantity ? 'SHIPPED' : 'AVAILABLE';
+
+    await this.prisma.lotPiece.update({
+      where: { id: shipmentPiece.lotPieceId },
+      data: { status: newStatus },
+    });
 
     return updated;
   }
