@@ -341,21 +341,14 @@ export class ShipmentsService {
     const now = new Date();
 
     await this.prisma.$transaction(async (tx) => {
-      // Soft-delete related LotArrivals
-      await tx.lotArrival.updateMany({
-        where: { shipmentId: id, deletedAt: null },
-        data: { deletedAt: now },
-      });
-
-      // Remove all ShipmentPiece records for this shipment
-      await tx.shipmentPiece.deleteMany({
-        where: { shipmentId: id },
-      });
-
-      // Roll back LotPiece statuses based on remaining shipments
+      // Roll back LotPiece statuses BEFORE deleting ShipmentPiece records
+      // so we can still query remaining shipments correctly
       for (const piece of shipment.pieces) {
         const remaining = await tx.shipmentPiece.findMany({
-          where: { lotPieceId: piece.lotPieceId },
+          where: {
+            lotPieceId: piece.lotPieceId,
+            shipmentId: { not: id }, // exclude the shipment being deleted
+          },
         });
 
         const totalStillShipped = remaining.reduce(
@@ -363,14 +356,33 @@ export class ShipmentsService {
           0,
         );
 
-        const newStatus =
-          totalStillShipped >= piece.lotPiece.quantity ? 'SHIPPED' : 'AVAILABLE';
+        // If the piece was ARRIVED or DAMAGED via an arrival record,
+        // those arrivals are also being deleted — revert to stock state
+        let newStatus: string;
+        if (totalStillShipped >= piece.lotPiece.quantity) {
+          newStatus = 'SHIPPED';
+        } else if (totalStillShipped > 0) {
+          newStatus = 'SHIPPED'; // partially in other shipments
+        } else {
+          newStatus = 'AVAILABLE'; // fully back in stock
+        }
 
         await tx.lotPiece.update({
           where: { id: piece.lotPieceId },
           data: { status: newStatus },
         });
       }
+
+      // Now delete ShipmentPiece records
+      await tx.shipmentPiece.deleteMany({
+        where: { shipmentId: id },
+      });
+
+      // Soft-delete related LotArrivals
+      await tx.lotArrival.updateMany({
+        where: { shipmentId: id, deletedAt: null },
+        data: { deletedAt: now },
+      });
 
       // Soft-delete the shipment itself
       await tx.shipment.update({
